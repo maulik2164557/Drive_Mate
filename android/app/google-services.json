@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "676839232367",
+    "project_id": "drive-mate-bd887",
+    "storage_bucket": "drive-mate-bd887.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:676839232367:android:29a3284d5db130b847ce9a",
+        "android_client_info": {
+          "package_name": "com.drivemate.drive_mate"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDIWhRF4YO7HqZyYLjRVBj6tbr7s4XsXaU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -125,9 +125,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
       String url;
       try {
         if (bytes != null) {
-          url = await _storageService.uploadFile('kyc/$fileName', bytes: bytes);
+          url = await _storageService
+              .uploadFile('kyc/$fileName', bytes: bytes)
+              .timeout(const Duration(seconds: 5));
         } else if (path != null) {
-          url = await _storageService.uploadFile('kyc/$fileName', file: File(path));
+          url = await _storageService
+              .uploadFile('kyc/$fileName', file: File(path))
+              .timeout(const Duration(seconds: 5));
         } else {
           throw Exception('File data not available.');
         }
@@ -522,10 +526,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 if (!isPdf) ...[
                   ClipRRect(
                     borderRadius: BorderRadius.circular(8),
-                    child: Image.network(
-                      url,
-                      fit: BoxFit.contain,
-                      errorBuilder: (_, __, ___) => const Icon(Icons.broken_image, size: 100, color: Colors.grey),
+                    child: SizedBox(
+                      height: 300,
+                      width: double.infinity,
+                      child: _buildImageWidget(url),
                     ),
                   ),
                 ] else ...[
@@ -590,6 +594,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ],
       ),
     );
+  }
+
+  Widget _buildImageWidget(String url) {
+    if (url.startsWith('data:image')) {
+      try {
+        final base64String = url.split(',').last;
+        final bytes = base64Decode(base64String);
+        return Image.memory(bytes, fit: BoxFit.contain);
+      } catch (_) {
+        return const Icon(Icons.broken_image, size: 100, color: Colors.grey);
+      }
+    } else {
+      return Image.network(
+        url,
+        fit: BoxFit.contain,
+        errorBuilder: (_, __, ___) => const Icon(Icons.broken_image, size: 100, color: Colors.grey),
+      );
+    }
   }
 
   Widget _buildBookingHistory(BookingProvider provider) {

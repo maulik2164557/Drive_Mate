@@ -3,9 +3,17 @@ import '../../../models/car_model.dart';
 
 class CarCard extends StatelessWidget {
   final CarModel car;
+  final int availableUnits;
+  final bool isFullyBooked;
   final VoidCallback onTap;
 
-  const CarCard({super.key, required this.car, required this.onTap});
+  const CarCard({
+    super.key, 
+    required this.car, 
+    this.availableUnits = 1,
+    this.isFullyBooked = false,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -18,19 +26,41 @@ class CarCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            ClipRRect(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-              child: Image.network(
-                car.imageUrl,
-                height: 150,
-                width: double.infinity,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) => Container(
-                  height: 150,
-                  color: Colors.grey[200],
-                  child: const Icon(Icons.directions_car, size: 50, color: Colors.grey),
+            Stack(
+              children: [
+                ClipRRect(
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                  child: Image.network(
+                    car.imageUrl,
+                    height: 150,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) => Container(
+                      height: 150,
+                      color: Colors.grey[200],
+                      child: const Icon(Icons.directions_car, size: 50, color: Colors.grey),
+                    ),
+                  ),
                 ),
-              ),
+                if (isFullyBooked)
+                  Container(
+                    height: 150,
+                    width: double.infinity,
+                    color: Colors.black54,
+                    alignment: Alignment.center,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.red.shade700,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Text(
+                        'All Units Are Booked',
+                        style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
+                      ),
+                    ),
+                  ),
+              ],
             ),
             Padding(
               padding: const EdgeInsets.all(12),
@@ -76,7 +106,10 @@ class CarCard extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text('₹${car.pricePerHour}/hr', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1E3A8A))),
-                      const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
+                      Text(
+                        isFullyBooked ? '0 units left' : '$availableUnits / ${car.totalUnits} available',
+                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: isFullyBooked ? Colors.red : Colors.green.shade700),
+                      ),
                     ],
                   ),
                 ],

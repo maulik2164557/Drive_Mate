@@ -34,6 +34,13 @@ class DatabaseService {
         snapshot.docs.map((doc) => BookingModel.fromMap(doc.data(), doc.id)).toList());
   }
 
+  Stream<List<BookingModel>> getUserBookings(String userId) {
+    return _db.collection('bookings')
+        .where('userId', isEqualTo: userId)
+        .snapshots()
+        .map((snapshot) => snapshot.docs.map((doc) => BookingModel.fromMap(doc.data(), doc.id)).toList());
+  }
+
   // Users
   Stream<List<UserModel>> getUsers() {
     return _db.collection('users').snapshots().map((snapshot) =>

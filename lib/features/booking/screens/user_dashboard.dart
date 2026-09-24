@@ -3,7 +3,9 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../../../providers/car_provider.dart';
 import '../../../providers/booking_provider.dart';
+import '../../../providers/auth_provider.dart';
 import '../../../models/car_model.dart';
+import '../../../services/database_service.dart';
 import '../../../core/widgets/app_navbar.dart';
 import '../../../core/widgets/app_footer.dart';
 import '../../../core/utils/location_data.dart';
@@ -46,6 +48,38 @@ class _UserDashboardState extends State<UserDashboard> {
     return count;
   }
 
+  Map<String, int> _bookedUnitsMap = {};
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final user = Provider.of<AuthProvider>(context, listen: false).userModel;
+      if (user != null) {
+        Provider.of<BookingProvider>(context, listen: false).fetchUserBookings(user.uid);
+      }
+    });
+  }
+
+  void _fetchAvailability() async {
+    final start = _pickupDateTime ?? DateTime.now().add(const Duration(hours: 2));
+    final end = _dropDateTime ?? DateTime.now().add(const Duration(days: 1, hours: 2));
+    try {
+      final bookings = await DatabaseService().getBookingsInRange(start, end);
+      Map<String, int> map = {};
+      for (var b in bookings) {
+        map[b.carId] = (map[b.carId] ?? 0) + 1;
+      }
+      if (mounted) {
+        setState(() {
+          _bookedUnitsMap = map;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error fetching availability: $e');
+    }
+  }
+
   bool _initializedArgs = false;
 
   @override
@@ -56,12 +90,13 @@ class _UserDashboardState extends State<UserDashboard> {
       final args = ModalRoute.of(context)?.settings.arguments;
       if (args != null && args is String && args.isNotEmpty) {
         _pickupLoc.text = args;
-        _onPickupLocationChanged(args);
+        _onPickupLocationChanged();
       }
     }
   }
 
-  void _onPickupLocationChanged(String text) {
+  void _onPickupLocationChanged() {
+    final text = _pickupLoc.text;
     final derivedDistrict = LocationData.getDistrictFromLocation(text);
     if (derivedDistrict != null) {
       if (_selectedDistrict != derivedDistrict) {
@@ -485,7 +520,7 @@ class _UserDashboardState extends State<UserDashboard> {
       onSelected: (String selection) {
         controller.text = selection;
         if (controller == _pickupLoc) {
-          _onPickupLocationChanged(selection);
+          _onPickupLocationChanged();
         }
       },
       fieldViewBuilder: (context, textController, focusNode, onFieldSubmitted) {
@@ -498,7 +533,7 @@ class _UserDashboardState extends State<UserDashboard> {
           onChanged: (val) {
             controller.text = val;
             if (controller == _pickupLoc) {
-              _onPickupLocationChanged(val);
+              _onPickupLocationChanged();
             }
           },
           decoration: InputDecoration(
@@ -541,6 +576,7 @@ class _UserDashboardState extends State<UserDashboard> {
 
   void _performDateSearch() {
     if (_pickupDateTime != null && _dropDateTime != null) {
+      _fetchAvailability();
       Provider.of<BookingProvider>(context, listen: false).searchCars(
         pickup: _pickupDateTime!,
         drop: _dropDateTime!,
@@ -600,9 +636,21 @@ class _UserDashboardState extends State<UserDashboard> {
       itemCount: cars.length,
       itemBuilder: (context, index) {
         final car = cars[index];
+        int booked = _bookedUnitsMap[car.carId] ?? 0;
+        int available = (car.totalUnits - booked).clamp(0, car.totalUnits);
+        bool isFullyBooked = available <= 0;
+
         return CarCard(
           car: car,
+          availableUnits: available,
+          isFullyBooked: isFullyBooked,
           onTap: () {
+            if (isFullyBooked) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('All units of this car are fully booked for your selected schedule.')),
+              );
+              return;
+            }
             Navigator.push(
               context,
               MaterialPageRoute(
@@ -610,6 +658,8 @@ class _UserDashboardState extends State<UserDashboard> {
                   car: car,
                   pickup: defaultPickup,
                   drop: defaultDrop,
+                  pickupLocation: _pickupLoc.text.trim().isNotEmpty ? _pickupLoc.text.trim() : '${car.district} Office / Depot',
+                  dropLocation: _dropLoc.text.trim().isNotEmpty ? _dropLoc.text.trim() : '${car.district} Office / Depot',
                 ),
               ),
             );

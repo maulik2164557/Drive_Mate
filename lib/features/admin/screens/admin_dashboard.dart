@@ -1108,35 +1108,18 @@ class _AdminDashboardState extends State<AdminDashboard> {
                     labelStyle: const TextStyle(color: Color(0xFF1E3A8A), fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 24),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      ElevatedButton.icon(
-                        onPressed: () => _showEditAdminProfileModal(context, user),
-                        icon: const Icon(Icons.edit, size: 18),
-                        label: const Text('Edit Profile'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF1E3A8A),
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                        ),
+                  Center(
+                    child: ElevatedButton.icon(
+                      onPressed: () => _showEditAdminProfileModal(context, user),
+                      icon: const Icon(Icons.edit, size: 18),
+                      label: const Text('Edit Profile'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF1E3A8A),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                       ),
-                      const SizedBox(width: 12),
-                      ElevatedButton.icon(
-                        onPressed: () {
-                          Navigator.pushNamed(context, '/admin_booking_history');
-                        },
-                        icon: const Icon(Icons.history, size: 18),
-                        label: const Text('See Booking History'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.indigo.shade800,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
                 ],
               ),

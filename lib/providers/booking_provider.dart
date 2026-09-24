@@ -14,14 +14,12 @@ class BookingProvider with ChangeNotifier {
   List<CarModel> get availableCars => _availableCars;
   bool get isLoading => _isLoading;
 
-  // void fetchUserBookings(String userId) {
-  //   _isLoading = true;
-  //   _dbService.getUserBookings(userId).listen((data) {
-  //     _userBookings = data;
-  //     _isLoading = false;
-  //     notifyListeners();
-  //   });
-  // }
+  void fetchUserBookings(String userId) {
+    _dbService.getUserBookings(userId).listen((data) {
+      _userBookings = data;
+      notifyListeners();
+    });
+  }
 
   Future<void> searchCars({
     required DateTime pickup,

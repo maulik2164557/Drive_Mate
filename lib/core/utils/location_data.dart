@@ -49,4 +49,48 @@ class LocationData {
     });
     return places;
   }
+
+  static String? getDistrictFromLocation(String? locationText) {
+    if (locationText == null || locationText.trim().isEmpty) return null;
+    final text = locationText.trim().toLowerCase();
+
+    // 1. Direct match with a district name
+    for (var district in gujaratDistricts.keys) {
+      if (district.toLowerCase() == text) {
+        return district;
+      }
+    }
+
+    // 2. Comma separated (e.g., "Girnar Hill, Junagadh")
+    if (text.contains(',')) {
+      final parts = text.split(',');
+      for (var part in parts.reversed) {
+        final p = part.trim().toLowerCase();
+        for (var district in gujaratDistricts.keys) {
+          if (district.toLowerCase() == p) {
+            return district;
+          }
+        }
+      }
+    }
+
+    // 3. Search district name substring or sites mapping
+    for (var entry in gujaratDistricts.entries) {
+      final districtName = entry.key;
+      final sites = entry.value;
+
+      if (text.contains(districtName.toLowerCase())) {
+        return districtName;
+      }
+
+      for (var site in sites) {
+        final s = site.toLowerCase();
+        if (text.contains(s) || s.contains(text)) {
+          return districtName;
+        }
+      }
+    }
+
+    return null;
+  }
 }

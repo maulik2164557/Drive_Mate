@@ -23,6 +23,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
   String _generatedCaptcha = "";
   String _role = "regular";
+  bool _obscurePassword = true;
+  bool _obscureConfirmPassword = true;
 
   @override
   Widget build(BuildContext context) {
@@ -58,9 +60,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
                             const SizedBox(height: 16),
                             _buildTextField('Mobile Number', _mobileController, Icons.phone),
                             const SizedBox(height: 16),
-                            _buildTextField('Password', _passwordController, Icons.lock, obscure: true),
+                            _buildTextField('Password', _passwordController, Icons.lock, isPassword: true, isObscured: _obscurePassword, onToggleObscure: () => setState(() => _obscurePassword = !_obscurePassword)),
                             const SizedBox(height: 16),
-                            _buildTextField('Confirm Password', _confirmPasswordController, Icons.lock_outline, obscure: true),
+                            _buildTextField('Confirm Password', _confirmPasswordController, Icons.lock_outline, isPassword: true, isObscured: _obscureConfirmPassword, onToggleObscure: () => setState(() => _obscureConfirmPassword = !_obscureConfirmPassword)),
                             const SizedBox(height: 16),
                             DropdownButtonFormField<String>(
                               initialValue: _role,
@@ -111,11 +113,34 @@ class _SignUpScreenState extends State<SignUpScreen> {
     );
   }
 
-  Widget _buildTextField(String label, TextEditingController controller, IconData icon, {bool obscure = false}) {
+  Widget _buildTextField(
+    String label, 
+    TextEditingController controller, 
+    IconData icon, {
+    bool obscure = false,
+    bool isPassword = false,
+    bool? isObscured,
+    VoidCallback? onToggleObscure,
+  }) {
+    final bool currentObscure = isPassword ? (isObscured ?? true) : obscure;
     return TextFormField(
       controller: controller,
-      obscureText: obscure,
-      decoration: InputDecoration(labelText: label, prefixIcon: Icon(icon), border: const OutlineInputBorder()),
+      obscureText: currentObscure,
+      decoration: InputDecoration(
+        labelText: label,
+        prefixIcon: Icon(icon),
+        suffixIcon: isPassword
+            ? IconButton(
+                icon: Icon(
+                  currentObscure ? Icons.visibility_off : Icons.visibility,
+                  color: Colors.grey[700],
+                ),
+                onPressed: onToggleObscure,
+                tooltip: currentObscure ? 'Show password' : 'Hide password',
+              )
+            : null,
+        border: const OutlineInputBorder(),
+      ),
       validator: (val) {
         if (val == null || val.isEmpty) return 'Please enter $label';
         if (label == 'Confirm Password' && val != _passwordController.text) return 'Passwords do not match';

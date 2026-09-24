@@ -19,6 +19,7 @@ class _SignInScreenState extends State<SignInScreen> {
   final _captchaController = TextEditingController();
   String _generatedCaptcha = "";
   String _role = "regular";
+  bool _obscurePassword = true;
 
   @override
   Widget build(BuildContext context) {
@@ -50,7 +51,7 @@ class _SignInScreenState extends State<SignInScreen> {
                             const SizedBox(height: 32),
                             _buildTextField('Email ID', _emailController, Icons.email),
                             const SizedBox(height: 16),
-                            _buildTextField('Password', _passwordController, Icons.lock, obscure: true),
+                            _buildTextField('Password', _passwordController, Icons.lock, isPassword: true, isObscured: _obscurePassword, onToggleObscure: () => setState(() => _obscurePassword = !_obscurePassword)),
                             const SizedBox(height: 16),
                             DropdownButtonFormField<String>(
                               initialValue: _role,
@@ -101,11 +102,34 @@ class _SignInScreenState extends State<SignInScreen> {
     );
   }
 
-  Widget _buildTextField(String label, TextEditingController controller, IconData icon, {bool obscure = false}) {
+  Widget _buildTextField(
+    String label, 
+    TextEditingController controller, 
+    IconData icon, {
+    bool obscure = false,
+    bool isPassword = false,
+    bool? isObscured,
+    VoidCallback? onToggleObscure,
+  }) {
+    final bool currentObscure = isPassword ? (isObscured ?? true) : obscure;
     return TextFormField(
       controller: controller,
-      obscureText: obscure,
-      decoration: InputDecoration(labelText: label, prefixIcon: Icon(icon), border: const OutlineInputBorder()),
+      obscureText: currentObscure,
+      decoration: InputDecoration(
+        labelText: label,
+        prefixIcon: Icon(icon),
+        suffixIcon: isPassword
+            ? IconButton(
+                icon: Icon(
+                  currentObscure ? Icons.visibility_off : Icons.visibility,
+                  color: Colors.grey[700],
+                ),
+                onPressed: onToggleObscure,
+                tooltip: currentObscure ? 'Show password' : 'Hide password',
+              )
+            : null,
+        border: const OutlineInputBorder(),
+      ),
       validator: (val) {
         if (val == null || val.isEmpty) return 'Please enter $label';
         if (label == 'Enter Captcha' && val != _generatedCaptcha) return 'Incorrect captcha';

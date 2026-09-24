@@ -49,7 +49,7 @@ class CarCard extends StatelessWidget {
                           children: [
                             const Icon(Icons.location_on, size: 12, color: Color(0xFF1E3A8A)),
                             const SizedBox(width: 2),
-                            Text(car.district, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF1E3A8A))),
+                            Text('${car.district} Office', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF1E3A8A))),
                           ],
                         ),
                       ),

@@ -141,11 +141,34 @@ class CarDetailsScreen extends StatelessWidget {
     if (user.kycStatus != 'Verified') {
       showDialog(
         context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('KYC Verification Required'),
-          content: const Text('Please upload your identification documents in your Profile before booking.'),
+        builder: (ctx) => AlertDialog(
+          title: const Row(
+            children: [
+              Icon(Icons.verified_user_outlined, color: Colors.orange, size: 28),
+              SizedBox(width: 8),
+              Text('KYC Verification Required'),
+            ],
+          ),
+          content: const Text(
+            'Your KYC status is pending. Please upload your Aadhaar Card and Driving Licence in your profile to complete verification before booking.',
+          ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(context), child: const Text('OK')),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton.icon(
+              onPressed: () {
+                Navigator.pop(ctx);
+                Navigator.pushNamed(context, '/profile');
+              },
+              icon: const Icon(Icons.upload_file, size: 18),
+              label: const Text('Go to KYC Page'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF1E3A8A),
+                foregroundColor: Colors.white,
+              ),
+            ),
           ],
         ),
       );

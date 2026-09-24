@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -55,13 +55,16 @@ class _AddCarScreenState extends State<AddCarScreen> {
 
     try {
       String imageUrl;
+      final bytes = await _imageFile!.readAsBytes();
       String fileName = 'cars/${DateTime.now().millisecondsSinceEpoch}.jpg';
       
-      if (kIsWeb) {
-        final bytes = await _imageFile!.readAsBytes();
-        imageUrl = await _storageService.uploadFile(fileName, bytes: bytes);
-      } else {
-        imageUrl = await _storageService.uploadFile(fileName, file: File(_imageFile!.path));
+      try {
+        imageUrl = await _storageService
+            .uploadFile(fileName, bytes: bytes)
+            .timeout(const Duration(seconds: 6));
+      } catch (e) {
+        final base64Str = base64Encode(bytes);
+        imageUrl = 'data:image/jpeg;base64,$base64Str';
       }
 
       final car = CarModel(
@@ -205,9 +208,15 @@ class _AddCarScreenState extends State<AddCarScreen> {
         child: _imageFile != null
             ? ClipRRect(
                 borderRadius: BorderRadius.circular(12),
-                child: kIsWeb 
-                  ? Image.network(_imageFile!.path, fit: BoxFit.cover) 
-                  : Image.file(File(_imageFile!.path), fit: BoxFit.cover),
+                child: FutureBuilder<Uint8List>(
+                  future: _imageFile!.readAsBytes(),
+                  builder: (context, snapshot) {
+                    if (snapshot.hasData) {
+                      return Image.memory(snapshot.data!, fit: BoxFit.cover, width: double.infinity);
+                    }
+                    return const Center(child: CircularProgressIndicator());
+                  },
+                ),
               )
             : const Column(
                 mainAxisAlignment: MainAxisAlignment.center,

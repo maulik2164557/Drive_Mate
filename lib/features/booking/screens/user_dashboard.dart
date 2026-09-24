@@ -46,8 +46,40 @@ class _UserDashboardState extends State<UserDashboard> {
     return count;
   }
 
+  bool _initializedArgs = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_initializedArgs) {
+      _initializedArgs = true;
+      final args = ModalRoute.of(context)?.settings.arguments;
+      if (args != null && args is String && args.isNotEmpty) {
+        _pickupLoc.text = args;
+        _onPickupLocationChanged(args);
+      }
+    }
+  }
+
+  void _onPickupLocationChanged(String text) {
+    final derivedDistrict = LocationData.getDistrictFromLocation(text);
+    if (derivedDistrict != null) {
+      if (_selectedDistrict != derivedDistrict) {
+        setState(() {
+          _selectedDistrict = derivedDistrict;
+        });
+      }
+    } else if (text.trim().isEmpty && _selectedDistrict != 'All') {
+      setState(() {
+        _selectedDistrict = 'All';
+      });
+    }
+  }
+
   void _clearAllFilters() {
     setState(() {
+      _pickupLoc.clear();
+      _dropLoc.clear();
       _selectedCategory = 'All';
       _selectedFuelType = 'All';
       _selectedTransmission = 'All';
@@ -441,6 +473,7 @@ class _UserDashboardState extends State<UserDashboard> {
 
   Widget _buildLocationAutocomplete(String label, TextEditingController controller, IconData icon) {
     return Autocomplete<String>(
+      initialValue: TextEditingValue(text: controller.text),
       optionsBuilder: (TextEditingValue textEditingValue) {
         if (textEditingValue.text == '') {
           return const Iterable<String>.empty();
@@ -451,11 +484,23 @@ class _UserDashboardState extends State<UserDashboard> {
       },
       onSelected: (String selection) {
         controller.text = selection;
+        if (controller == _pickupLoc) {
+          _onPickupLocationChanged(selection);
+        }
       },
       fieldViewBuilder: (context, textController, focusNode, onFieldSubmitted) {
+        if (controller.text.isNotEmpty && textController.text != controller.text) {
+          textController.text = controller.text;
+        }
         return TextField(
           controller: textController,
           focusNode: focusNode,
+          onChanged: (val) {
+            controller.text = val;
+            if (controller == _pickupLoc) {
+              _onPickupLocationChanged(val);
+            }
+          },
           decoration: InputDecoration(
             labelText: label,
             prefixIcon: Icon(icon),

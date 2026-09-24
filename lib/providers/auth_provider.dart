@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import '../models/user_model.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 
 class AuthProvider with ChangeNotifier {
   final AuthService _authService = AuthService();
@@ -57,6 +56,23 @@ class AuthProvider with ChangeNotifier {
 
   Future<void> refreshUser() async {
     _userModel = await _authService.getCurrentUserModel();
+    notifyListeners();
+  }
+
+  Future<void> updateProfile({
+    required String fullName,
+    required String mobileNumber,
+  }) async {
+    if (_userModel == null) return;
+    _isLoading = true;
+    notifyListeners();
+    await _authService.updateUserProfile(
+      uid: _userModel!.uid,
+      fullName: fullName,
+      mobileNumber: mobileNumber,
+    );
+    await refreshUser();
+    _isLoading = false;
     notifyListeners();
   }
 

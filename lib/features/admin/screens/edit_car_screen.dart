@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -64,12 +65,15 @@ class _EditCarScreenState extends State<EditCarScreen> {
     try {
       String imageUrl = widget.car.imageUrl;
       if (_imageFile != null) {
+        final bytes = await _imageFile!.readAsBytes();
         String fileName = 'cars/${DateTime.now().millisecondsSinceEpoch}.jpg';
-        if (kIsWeb) {
-          final bytes = await _imageFile!.readAsBytes();
-          imageUrl = await _storageService.uploadFile(fileName, bytes: bytes);
-        } else {
-          imageUrl = await _storageService.uploadFile(fileName, file: File(_imageFile!.path));
+        try {
+          imageUrl = await _storageService
+              .uploadFile(fileName, bytes: bytes)
+              .timeout(const Duration(seconds: 6));
+        } catch (e) {
+          final base64Str = base64Encode(bytes);
+          imageUrl = 'data:image/jpeg;base64,$base64Str';
         }
       }
 
@@ -187,8 +191,23 @@ class _EditCarScreenState extends State<EditCarScreen> {
         width: double.infinity,
         decoration: BoxDecoration(color: Colors.grey[200], borderRadius: BorderRadius.circular(12)),
         child: _imageFile != null 
-          ? ClipRRect(borderRadius: BorderRadius.circular(12), child: kIsWeb ? Image.network(_imageFile!.path) : Image.file(File(_imageFile!.path)))
-          : Image.network(widget.car.imageUrl),
+          ? ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: FutureBuilder<Uint8List>(
+                future: _imageFile!.readAsBytes(),
+                builder: (context, snapshot) {
+                  if (snapshot.hasData) {
+                    return Image.memory(snapshot.data!, fit: BoxFit.cover);
+                  }
+                  return const Center(child: CircularProgressIndicator());
+                },
+              ),
+            )
+          : Image.network(
+              widget.car.imageUrl,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => const Center(child: Icon(Icons.directions_car, size: 50)),
+            ),
       ),
     );
   }

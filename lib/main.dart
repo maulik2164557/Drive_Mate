@@ -11,6 +11,8 @@ import 'features/auth/screens/signup_screen.dart';
 import 'features/booking/screens/user_dashboard.dart';
 import 'features/admin/screens/admin_dashboard.dart';
 import 'features/profile/screens/profile_screen.dart';
+import 'features/profile/screens/user_booking_history_screen.dart';
+import 'features/admin/screens/admin_car_booking_history_screen.dart';
 import 'firebase_options.dart';
 
 void main() async {
@@ -48,6 +50,8 @@ class DriveMateApp extends StatelessWidget {
           '/user_dashboard': (context) => const UserDashboard(),
           '/admin_dashboard': (context) => const AdminDashboard(),
           '/profile': (context) => const ProfileScreen(),
+          '/booking_history': (context) => const UserBookingHistoryScreen(),
+          '/admin_booking_history': (context) => const AdminCarBookingHistoryScreen(),
         },
       ),
     );

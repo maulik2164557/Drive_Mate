@@ -82,4 +82,15 @@ class AuthService {
     }
     return null;
   }
+
+  Future<void> updateUserProfile({
+    required String uid,
+    required String fullName,
+    required String mobileNumber,
+  }) async {
+    await _db.collection('users').doc(uid).update({
+      'fullName': fullName,
+      'mobileNumber': mobileNumber,
+    });
+  }
 }

@@ -140,7 +140,10 @@ class _GuestDashboardState extends State<GuestDashboard> {
             width: double.infinity,
             height: 50,
             child: ElevatedButton(
-              onPressed: () => Navigator.pushNamed(context, '/signup'),
+              onPressed: () {
+                final pickupText = _pickupLocController.text.trim();
+                Navigator.pushNamed(context, '/signup', arguments: pickupText);
+              },
               style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1E3A8A), foregroundColor: Colors.white),
               child: const Text('Search Available Cars', style: TextStyle(fontSize: 18)),
             ),

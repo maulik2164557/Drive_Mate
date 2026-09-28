@@ -33,6 +33,14 @@ class BookingModel {
     required this.createdAt,
   });
 
+  String get effectiveStatus {
+    if (status == 'Cancelled') return 'Cancelled';
+    final now = DateTime.now();
+    if (now.isAfter(dropDateTime)) return 'Completed';
+    if (now.isAfter(pickupDateTime) && now.isBefore(dropDateTime)) return 'Running Journey';
+    return 'Pending Journey';
+  }
+
   factory BookingModel.fromMap(Map<String, dynamic> map, String id) {
     return BookingModel(
       bookingId: id,

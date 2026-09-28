@@ -17,9 +17,15 @@ class AuthProvider with ChangeNotifier {
   void _init() async {
     _isLoading = true;
     notifyListeners();
-    _userModel = await _authService.getCurrentUserModel();
-    _isLoading = false;
-    notifyListeners();
+    try {
+      _userModel = await _authService.getCurrentUserModel();
+    } catch (e) {
+      debugPrint('AuthProvider init note: $e');
+      _userModel = null;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
   }
 
   Future<void> signUp({

@@ -34,14 +34,14 @@ class JourneyOperationsScreen extends StatelessWidget {
           final now = DateTime.now();
 
           final activeJourneys = allBookings.where((b) => 
-            b.status == 'Pending Journey' && 
-            b.pickupDateTime.isBefore(now) && 
-            b.dropDateTime.isAfter(now)
+            b.status != 'Cancelled' && 
+            (now.isAfter(b.pickupDateTime) || now.isAtSameMomentAs(b.pickupDateTime)) && 
+            now.isBefore(b.dropDateTime)
           ).toList();
           
           final pendingJourneys = allBookings.where((b) => 
-            b.status == 'Pending Journey' && 
-            b.pickupDateTime.isAfter(now)
+            b.status != 'Cancelled' && 
+            now.isBefore(b.pickupDateTime)
           ).toList();
 
           return DefaultTabController(

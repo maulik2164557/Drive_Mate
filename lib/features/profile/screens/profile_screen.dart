@@ -180,6 +180,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     if (user == null) return const Scaffold(body: Center(child: Text('Please log in.')));
 
+    final bool isAdmin = user.role == 'admin';
+
     return Scaffold(
       appBar: const AppNavbar(title: 'My Profile'),
       body: SingleChildScrollView(
@@ -193,10 +195,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   child: Column(
                     children: [
                       _buildProfileHeader(user),
-                      const SizedBox(height: 32),
-                      _buildKYCSection(user),
-                      const SizedBox(height: 32),
-                      _buildBookingHistory(bookingProvider),
+                      if (!isAdmin) ...[
+                        const SizedBox(height: 32),
+                        _buildKYCSection(user),
+                        const SizedBox(height: 32),
+                        _buildBookingHistory(bookingProvider),
+                      ],
                     ],
                   ),
                 ),

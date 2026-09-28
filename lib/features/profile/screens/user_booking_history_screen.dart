@@ -46,9 +46,9 @@ class _UserBookingHistoryScreenState extends State<UserBookingHistoryScreen> wit
     }
 
     final allBookings = bookingProvider.userBookings;
-    final pendingBookings = allBookings.where((b) => b.status == 'Pending Journey').toList();
-    final completedBookings = allBookings.where((b) => b.status == 'Completed').toList();
-    final cancelledBookings = allBookings.where((b) => b.status == 'Cancelled').toList();
+    final pendingBookings = allBookings.where((b) => b.effectiveStatus == 'Pending Journey').toList();
+    final completedBookings = allBookings.where((b) => b.effectiveStatus == 'Completed').toList();
+    final cancelledBookings = allBookings.where((b) => b.effectiveStatus == 'Cancelled').toList();
 
     return Scaffold(
       appBar: const AppNavbar(title: 'My Booking History'),
@@ -116,12 +116,16 @@ class _UserBookingHistoryScreenState extends State<UserBookingHistoryScreen> wit
             final duration = booking.dropDateTime.difference(booking.pickupDateTime);
             final hours = duration.inHours;
 
+            final currentStatus = booking.effectiveStatus;
             Color statusColor = Colors.orange;
             IconData statusIcon = Icons.pending_actions;
-            if (booking.status == 'Completed') {
+            if (currentStatus == 'Completed') {
               statusColor = Colors.green;
               statusIcon = Icons.check_circle;
-            } else if (booking.status == 'Cancelled') {
+            } else if (currentStatus == 'Running Journey') {
+              statusColor = Colors.blue;
+              statusIcon = Icons.directions_run;
+            } else if (currentStatus == 'Cancelled') {
               statusColor = Colors.red;
               statusIcon = Icons.cancel;
             }
@@ -152,7 +156,7 @@ class _UserBookingHistoryScreenState extends State<UserBookingHistoryScreen> wit
                         Chip(
                           avatar: Icon(statusIcon, size: 16, color: Colors.white),
                           label: Text(
-                            booking.status.toUpperCase(),
+                            currentStatus.toUpperCase(),
                             style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
                           ),
                           backgroundColor: statusColor,
@@ -255,7 +259,7 @@ class _UserBookingHistoryScreenState extends State<UserBookingHistoryScreen> wit
                       ),
                     ],
                     // Cancellation Action
-                    if (booking.status == 'Pending Journey') ...[
+                    if (booking.effectiveStatus == 'Pending Journey') ...[
                       const SizedBox(height: 16),
                       Align(
                         alignment: Alignment.centerRight,

@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/car_model.dart';
 import '../models/booking_model.dart';
 import '../models/user_model.dart';
+import '../models/review_model.dart';
 
 class DatabaseService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
@@ -47,6 +48,17 @@ class DatabaseService {
         snapshot.docs.map((doc) => UserModel.fromMap(doc.data())).toList());
   }
 
+  Stream<List<UserModel>> getAdminUsers() {
+    return _db.collection('users')
+        .where('role', isEqualTo: 'admin')
+        .snapshots()
+        .map((snapshot) => snapshot.docs.map((doc) => UserModel.fromMap(doc.data())).toList());
+  }
+
+  Future<void> approveAdminUser(String uid) {
+    return _db.collection('users').doc(uid).update({'adminApproved': true});
+  }
+
   Future<UserModel?> getUserById(String uid) async {
     try {
       var doc = await _db.collection('users').doc(uid).get();
@@ -90,5 +102,42 @@ class DatabaseService {
           return (b.pickupDateTime.isBefore(end) && b.dropDateTime.isAfter(start));
         })
         .toList();
+  }
+
+  // Reviews
+  Future<void> addReview(ReviewModel review) {
+    return _db.collection('reviews').add(review.toMap());
+  }
+
+  Future<ReviewModel?> getReviewForBooking(String bookingId) async {
+    try {
+      var snapshot = await _db
+          .collection('reviews')
+          .where('bookingId', isEqualTo: bookingId)
+          .limit(1)
+          .get();
+      if (snapshot.docs.isNotEmpty) {
+        return ReviewModel.fromMap(
+            snapshot.docs.first.data(), snapshot.docs.first.id);
+      }
+    } catch (e) {
+      // Return null if review fetch fails
+    }
+    return null;
+  }
+
+  Stream<List<ReviewModel>> getReviewsForCar(String carId) {
+    return _db
+        .collection('reviews')
+        .where('carId', isEqualTo: carId)
+        .snapshots()
+        .map((snapshot) => snapshot.docs
+            .map((doc) => ReviewModel.fromMap(doc.data(), doc.id))
+            .toList());
+  }
+
+  Stream<List<ReviewModel>> getAllReviews() {
+    return _db.collection('reviews').snapshots().map((snapshot) =>
+        snapshot.docs.map((doc) => ReviewModel.fromMap(doc.data(), doc.id)).toList());
   }
 }

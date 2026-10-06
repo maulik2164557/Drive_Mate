@@ -20,6 +20,7 @@ class _SignInScreenState extends State<SignInScreen> {
   String _generatedCaptcha = "";
   String _role = "regular";
   bool _obscurePassword = true;
+  String? _errorMessage;
 
   @override
   Widget build(BuildContext context) {
@@ -48,7 +49,19 @@ class _SignInScreenState extends State<SignInScreen> {
                             const Text('Welcome Back', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Color(0xFF1E3A8A)), textAlign: TextAlign.center),
                             const SizedBox(height: 8),
                             const Text('Sign in to access your DriveMate account', style: TextStyle(color: Colors.grey), textAlign: TextAlign.center),
-                            const SizedBox(height: 32),
+                            if (_errorMessage != null) ...[
+                              const SizedBox(height: 12),
+                              Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(color: Colors.red.shade50, borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.red.shade200)),
+                                child: Text(
+                                  _errorMessage!,
+                                  style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold, fontSize: 13),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ),
+                            ],
+                            const SizedBox(height: 24),
                             _buildTextField('Email ID', _emailController, Icons.email),
                             const SizedBox(height: 16),
                             _buildTextField('Password', _passwordController, Icons.lock, isPassword: true, isObscured: _obscurePassword, onToggleObscure: () => setState(() => _obscurePassword = !_obscurePassword)),
@@ -132,6 +145,7 @@ class _SignInScreenState extends State<SignInScreen> {
       ),
       validator: (val) {
         if (val == null || val.isEmpty) return 'Please enter $label';
+        if (label == 'Password' && val.length < 6) return 'Password must be at least 6 characters long';
         if (label == 'Enter Captcha' && val != _generatedCaptcha) return 'Incorrect captcha';
         return null;
       },
@@ -139,6 +153,7 @@ class _SignInScreenState extends State<SignInScreen> {
   }
 
   void _handleSignIn(AuthProvider authProvider) async {
+    setState(() => _errorMessage = null);
     if (_formKey.currentState!.validate()) {
       try {
         await authProvider.signIn(
@@ -151,9 +166,16 @@ class _SignInScreenState extends State<SignInScreen> {
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+          final errStr = e.toString();
+          if (errStr.contains('You can only sign in after the approval of your account')) {
+            setState(() => _errorMessage = 'You can only sign in after the approval of your account');
+          } else {
+            setState(() => _errorMessage = 'Enter the valid information');
+          }
         }
       }
+    } else {
+      setState(() => _errorMessage = 'Enter the valid information');
     }
   }
 }

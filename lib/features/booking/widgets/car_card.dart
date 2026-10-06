@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../models/car_model.dart';
+import '../../../models/review_model.dart';
+import '../../../services/database_service.dart';
 
 class CarCard extends StatelessWidget {
   final CarModel car;
@@ -98,7 +100,22 @@ class CarCard extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       _buildIconText(Icons.airline_seat_recline_normal, '${car.seatingCapacity} Seater'),
-                      _buildIconText(Icons.settings, car.transmission),
+                      StreamBuilder<List<ReviewModel>>(
+                        stream: DatabaseService().getReviewsForCar(car.carId),
+                        builder: (context, snapshot) {
+                          final reviews = snapshot.data ?? [];
+                          if (reviews.isEmpty) return _buildIconText(Icons.settings, car.transmission);
+                          final avgRating = reviews.fold(0.0, (sum, r) => sum + r.carRating) / reviews.length;
+                          return Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.star, color: Colors.amber, size: 14),
+                              const SizedBox(width: 2),
+                              Text('${avgRating.toStringAsFixed(1)} ★ (${reviews.length})', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.amber)),
+                            ],
+                          );
+                        },
+                      ),
                     ],
                   ),
                   const Divider(),

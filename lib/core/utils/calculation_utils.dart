@@ -1,5 +1,8 @@
 class CalculationUtils {
   static double calculateTotalPrice(double pricePerHour, DateTime pickup, DateTime drop) {
+    if (!drop.isAfter(pickup)) {
+      return 0.0;
+    }
     Duration duration = drop.difference(pickup);
     double hours = duration.inMinutes / 60.0;
     return hours * pricePerHour;

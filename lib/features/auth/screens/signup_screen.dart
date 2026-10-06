@@ -25,6 +25,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   String _role = "regular";
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
+  String? _errorMessage;
 
   @override
   Widget build(BuildContext context) {
@@ -53,7 +54,19 @@ class _SignUpScreenState extends State<SignUpScreen> {
                             const Text('Create Account', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Color(0xFF1E3A8A)), textAlign: TextAlign.center),
                             const SizedBox(height: 8),
                             const Text('Join DriveMate to explore Gujarat with ease', style: TextStyle(color: Colors.grey), textAlign: TextAlign.center),
-                            const SizedBox(height: 32),
+                            if (_errorMessage != null) ...[
+                              const SizedBox(height: 12),
+                              Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(color: Colors.red.shade50, borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.red.shade200)),
+                                child: Text(
+                                  _errorMessage!,
+                                  style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold, fontSize: 13),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ),
+                            ],
+                            const SizedBox(height: 24),
                             _buildTextField('Full Name', _fullNameController, Icons.person),
                             const SizedBox(height: 16),
                             _buildTextField('Email ID', _emailController, Icons.email),
@@ -140,9 +153,17 @@ class _SignUpScreenState extends State<SignUpScreen> {
               )
             : null,
         border: const OutlineInputBorder(),
+        helperText: label == 'Password' ? 'Min 6 chars: Require 1 Capital, 1 Small, 1 Digit & 1 Special Char (!@#\$)' : null,
       ),
       validator: (val) {
         if (val == null || val.isEmpty) return 'Please enter $label';
+        if (label == 'Password') {
+          if (val.length < 6) return 'Password must be at least 6 characters long';
+          if (!RegExp(r'[A-Z]').hasMatch(val)) return 'Must contain at least 1 Capital letter (A-Z)';
+          if (!RegExp(r'[a-z]').hasMatch(val)) return 'Must contain at least 1 Small letter (a-z)';
+          if (!RegExp(r'[0-9]').hasMatch(val)) return 'Must contain at least 1 Digit (0-9)';
+          if (!RegExp(r'[!@#$%^&*(),.?":{}|<>]').hasMatch(val)) return 'Must contain at least 1 Special character (!, @, #, \$, etc.)';
+        }
         if (label == 'Confirm Password' && val != _passwordController.text) return 'Passwords do not match';
         if (label == 'Enter Captcha' && val != _generatedCaptcha) return 'Incorrect captcha';
         return null;
@@ -151,6 +172,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   }
 
   void _handleSignUp(AuthProvider authProvider) async {
+    setState(() => _errorMessage = null);
     if (_formKey.currentState!.validate()) {
       try {
         await authProvider.signUp(
@@ -161,13 +183,45 @@ class _SignUpScreenState extends State<SignUpScreen> {
           role: _role,
         );
         if (mounted) {
-          Navigator.pop(context);
+          if (_role == 'admin' && (authProvider.userModel == null || !authProvider.userModel!.adminApproved)) {
+            showDialog(
+              context: context,
+              barrierDismissible: false,
+              builder: (ctx) => AlertDialog(
+                title: const Row(
+                  children: [
+                    Icon(Icons.hourglass_top, color: Colors.orange),
+                    SizedBox(width: 8),
+                    Text('Admin Approval Required'),
+                  ],
+                ),
+                content: const Text(
+                  'You can only sign in after the approval of your account',
+                  style: TextStyle(fontSize: 16),
+                ),
+                actions: [
+                  ElevatedButton(
+                    onPressed: () {
+                      Navigator.pop(ctx);
+                      Navigator.pushReplacementNamed(context, '/signin');
+                    },
+                    style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1E3A8A), foregroundColor: Colors.white),
+                    child: const Text('OK'),
+                  ),
+                ],
+              ),
+            );
+          } else {
+            Navigator.pop(context);
+          }
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+          setState(() => _errorMessage = 'Enter the valid information');
         }
       }
+    } else {
+      setState(() => _errorMessage = 'Enter the valid information');
     }
   }
 }

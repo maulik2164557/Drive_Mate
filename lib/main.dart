@@ -13,6 +13,8 @@ import 'features/admin/screens/admin_dashboard.dart';
 import 'features/profile/screens/profile_screen.dart';
 import 'features/profile/screens/user_booking_history_screen.dart';
 import 'features/admin/screens/admin_car_booking_history_screen.dart';
+import 'features/admin/screens/admin_completed_journeys_screen.dart';
+import 'features/admin/screens/admin_directory_screen.dart';
 import 'firebase_options.dart';
 
 void main() async {
@@ -38,10 +40,18 @@ class DriveMateApp extends StatelessWidget {
         title: 'DriveMate',
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
-          primarySwatch: Colors.blue,
-          textTheme: GoogleFonts.poppinsTextTheme(),
           useMaterial3: true,
-          colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF1E3A8A)),
+          colorScheme: ColorScheme.fromSeed(
+            seedColor: const Color(0xFF1E3A8A),
+            primary: const Color(0xFF1E3A8A),
+            secondary: const Color(0xFF1D4ED8),
+          ),
+          textTheme: GoogleFonts.poppinsTextTheme(ThemeData.light().textTheme),
+          appBarTheme: const AppBarTheme(
+            backgroundColor: Color(0xFF1E3A8A),
+            foregroundColor: Colors.white,
+            elevation: 2,
+          ),
         ),
         home: const AuthWrapper(),
         routes: {
@@ -52,6 +62,8 @@ class DriveMateApp extends StatelessWidget {
           '/profile': (context) => const ProfileScreen(),
           '/booking_history': (context) => const UserBookingHistoryScreen(),
           '/admin_booking_history': (context) => const AdminCarBookingHistoryScreen(),
+          '/admin_completed_journeys': (context) => const AdminCompletedJourneysScreen(),
+          '/admin_directory': (context) => const AdminDirectoryScreen(),
         },
       ),
     );

@@ -187,7 +187,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            Padding(
+            Container(
+              constraints: BoxConstraints(
+                minHeight: MediaQuery.of(context).size.height - kToolbarHeight - 220,
+              ),
               padding: const EdgeInsets.all(24),
               child: Center(
                 child: ConstrainedBox(
@@ -214,6 +217,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildProfileHeader(dynamic user) {
+    final bool isAdmin = user.role == 'admin';
     return Card(
       elevation: 3,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -221,7 +225,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
         padding: const EdgeInsets.all(20.0),
         child: Row(
           children: [
-            const CircleAvatar(radius: 40, child: Icon(Icons.person, size: 40)),
+            CircleAvatar(
+              radius: 40,
+              backgroundColor: isAdmin ? const Color(0xFFEFF6FF) : Colors.blue.shade50,
+              child: Icon(isAdmin ? Icons.admin_panel_settings : Icons.person, size: 40, color: const Color(0xFF1E3A8A)),
+            ),
             const SizedBox(width: 20),
             Expanded(
               child: Column(
@@ -245,11 +253,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ],
                   ),
                   const SizedBox(height: 8),
-                  Chip(
-                    label: Text('KYC: ${user.kycStatus}'),
-                    backgroundColor: user.kycStatus == 'Verified' ? Colors.green[100] : Colors.orange[100],
-                    labelStyle: TextStyle(color: user.kycStatus == 'Verified' ? Colors.green[800] : Colors.orange[800], fontWeight: FontWeight.bold),
-                  ),
+                  if (isAdmin)
+                    Chip(
+                      label: const Text('ADMINISTRATOR'),
+                      backgroundColor: const Color(0xFFEFF6FF),
+                      labelStyle: const TextStyle(color: Color(0xFF1E3A8A), fontWeight: FontWeight.bold),
+                    )
+                  else
+                    Chip(
+                      label: Text('KYC: ${user.kycStatus}'),
+                      backgroundColor: user.kycStatus == 'Verified' ? Colors.green[100] : Colors.orange[100],
+                      labelStyle: TextStyle(color: user.kycStatus == 'Verified' ? Colors.green[800] : Colors.orange[800], fontWeight: FontWeight.bold),
+                    ),
                 ],
               ),
             ),

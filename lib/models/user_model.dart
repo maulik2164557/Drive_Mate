@@ -7,6 +7,7 @@ class UserModel {
   final String mobileNumber;
   final String role; // "admin" | "regular"
   final String kycStatus; // "Pending" | "Verified"
+  final bool adminApproved; // true for regular or approved admins
   final String? aadharDocumentUrl;
   final String? drivingLicenceUrl;
   final DateTime createdAt;
@@ -18,6 +19,7 @@ class UserModel {
     required this.mobileNumber,
     required this.role,
     required this.kycStatus,
+    this.adminApproved = true,
     this.aadharDocumentUrl,
     this.drivingLicenceUrl,
     required this.createdAt,
@@ -31,6 +33,7 @@ class UserModel {
       mobileNumber: map['mobileNumber'] ?? '',
       role: map['role'] ?? 'regular',
       kycStatus: map['kycStatus'] ?? 'Pending',
+      adminApproved: map['adminApproved'] ?? true,
       aadharDocumentUrl: map['aadharDocumentUrl'],
       drivingLicenceUrl: map['drivingLicenceUrl'],
       createdAt: (map['createdAt'] as Timestamp).toDate(),
@@ -45,6 +48,7 @@ class UserModel {
       'mobileNumber': mobileNumber,
       'role': role,
       'kycStatus': kycStatus,
+      'adminApproved': adminApproved,
       'aadharDocumentUrl': aadharDocumentUrl,
       'drivingLicenceUrl': drivingLicenceUrl,
       'createdAt': Timestamp.fromDate(createdAt),

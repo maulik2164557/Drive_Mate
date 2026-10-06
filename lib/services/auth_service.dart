@@ -16,6 +16,15 @@ class AuthService {
     required String role,
   }) async {
     try {
+      bool isApprovedAdmin = true;
+      if (role == 'admin') {
+        // Check if an existing approved admin already exists in the system
+        var existingAdmins = await _db.collection('users').where('role', isEqualTo: 'admin').get();
+        if (existingAdmins.docs.isNotEmpty) {
+          isApprovedAdmin = false; // Requires approval from an existing admin
+        }
+      }
+
       UserCredential result = await _auth.createUserWithEmailAndPassword(
         email: email,
         password: password,
@@ -30,10 +39,14 @@ class AuthService {
           mobileNumber: mobileNumber,
           role: role,
           kycStatus: 'Pending',
+          adminApproved: isApprovedAdmin,
           createdAt: DateTime.now(),
         );
 
         await _db.collection('users').doc(user.uid).set(userModel.toMap());
+        if (role == 'admin' && !isApprovedAdmin) {
+          await _auth.signOut(); // Ensure new unapproved admin is signed out
+        }
         return userModel;
       }
     } catch (e) {
@@ -56,12 +69,19 @@ class AuthService {
         throw Exception('User with this role not found. Please register first.');
       }
 
+      final userData = userDoc.docs.first.data();
+      final userModel = UserModel.fromMap(userData);
+
+      if (userModel.role == 'admin' && !userModel.adminApproved) {
+        throw Exception('You can only sign in after the approval of your account');
+      }
+
       UserCredential result = await _auth.signInWithEmailAndPassword(
         email: email,
         password: password,
       );
       
-      return UserModel.fromMap(userDoc.docs.first.data());
+      return userModel;
     } catch (e) {
       print(e.toString());
       rethrow;

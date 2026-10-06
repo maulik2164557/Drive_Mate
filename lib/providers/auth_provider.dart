@@ -37,15 +37,18 @@ class AuthProvider with ChangeNotifier {
   }) async {
     _isLoading = true;
     notifyListeners();
-    _userModel = await _authService.signUp(
-      email: email,
-      password: password,
-      fullName: fullName,
-      mobileNumber: mobileNumber,
-      role: role,
-    );
-    _isLoading = false;
-    notifyListeners();
+    try {
+      _userModel = await _authService.signUp(
+        email: email,
+        password: password,
+        fullName: fullName,
+        mobileNumber: mobileNumber,
+        role: role,
+      );
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
   }
 
   Future<void> signIn({
@@ -55,9 +58,12 @@ class AuthProvider with ChangeNotifier {
   }) async {
     _isLoading = true;
     notifyListeners();
-    _userModel = await _authService.signIn(email: email, password: password, role: role);
-    _isLoading = false;
-    notifyListeners();
+    try {
+      _userModel = await _authService.signIn(email: email, password: password, role: role);
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
   }
 
   Future<void> refreshUser() async {

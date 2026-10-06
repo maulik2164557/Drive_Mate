@@ -5,6 +5,7 @@ import '../../../providers/auth_provider.dart';
 import '../../../providers/booking_provider.dart';
 import '../../../core/utils/calculation_utils.dart';
 import '../../../models/booking_model.dart';
+import '../../../services/receipt_pdf_service.dart';
 import '../../../core/widgets/app_navbar.dart';
 import '../../../core/widgets/app_footer.dart';
 import 'package:intl/intl.dart';
@@ -80,10 +81,73 @@ class CarDetailsScreen extends StatelessWidget {
                       _buildInfoRow('Seating Capacity', '${car.seatingCapacity} Seater'),
                       _buildInfoRow('Transmission', car.transmission),
                       const Divider(height: 32),
-                      const Text('Booking Schedule', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                      const SizedBox(height: 8),
-                      _buildScheduleItem('Pickup', pickup),
-                      _buildScheduleItem('Drop', drop),
+                      const Text('Booking Schedule & Depot Route', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 12),
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.shade50.withValues(alpha: 0.5),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.blue.shade100),
+                        ),
+                        child: Column(
+                          children: [
+                            // Pickup Location & Time Row
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Icon(Icons.trip_origin, color: Colors.green, size: 22),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      const Text('PICKUP LOCATION & TIME', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey)),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        pickupLocation.trim().isNotEmpty ? pickupLocation.trim() : '${car.district} Office / Main Depot',
+                                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF1E3A8A)),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        DateFormat('EEE, dd MMM yyyy, hh:mm a').format(pickup),
+                                        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.black87),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const Divider(height: 24),
+                            // Drop Location & Time Row
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Icon(Icons.location_on, color: Colors.red, size: 22),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      const Text('DROP LOCATION & TIME', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey)),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        dropLocation.trim().isNotEmpty ? dropLocation.trim() : '${car.district} Office / Main Depot',
+                                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF1E3A8A)),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        DateFormat('EEE, dd MMM yyyy, hh:mm a').format(drop),
+                                        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.black87),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
                       const Divider(height: 32),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -127,20 +191,18 @@ class CarDetailsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildScheduleItem(String label, DateTime dt) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        children: [
-          Icon(Icons.calendar_today, size: 16, color: Colors.grey[600]),
-          const SizedBox(width: 8),
-          Text('$label: ${DateFormat('dd MMM yyyy, hh:mm a').format(dt)}'),
-        ],
-      ),
-    );
-  }
-
   void _handleBooking(BuildContext context, dynamic user, double amount) async {
+    // 0. Schedule Validity Check
+    if (!drop.isAfter(pickup)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Invalid schedule: Drop date & time must be after pickup date & time.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
     // 1. KYC Check
     if (user.kycStatus != 'Verified') {
       showDialog(
@@ -439,8 +501,12 @@ class CarDetailsScreen extends StatelessWidget {
   void _executeSuccessfulPayment(BuildContext parentContext, double amount) async {
     final bookingProvider = Provider.of<BookingProvider>(parentContext, listen: false);
     final authProvider = Provider.of<AuthProvider>(parentContext, listen: false);
-    final userId = authProvider.userModel!.uid;
+    final user = authProvider.userModel;
+    final userId = user!.uid;
     final carId = car.carId;
+
+    // Generate unique official Invoice Number
+    final invoiceNumber = ReceiptPdfService.generateInvoiceNumber();
 
     Navigator.pop(parentContext); // Close payment modal sheet
 
@@ -449,6 +515,7 @@ class CarDetailsScreen extends StatelessWidget {
       context: parentContext,
       barrierDismissible: false,
       builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Column(
           children: [
             Icon(Icons.check_circle, color: Colors.green, size: 64),
@@ -460,6 +527,36 @@ class CarDetailsScreen extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: const Color(0xFFEFF6FF),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: const Color(0xFFBFDBFE)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.receipt_long, color: Color(0xFF1E3A8A), size: 22),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'INVOICE NUMBER',
+                          style: TextStyle(fontSize: 10, color: Color(0xFF64748B), fontWeight: FontWeight.bold, letterSpacing: 0.5),
+                        ),
+                        Text(
+                          invoiceNumber,
+                          style: const TextStyle(fontSize: 14, color: Color(0xFF1E3A8A), fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 14),
             Text('Booking for ${car.name} is confirmed.', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
             const SizedBox(height: 8),
             Text('Pickup: $pickupLocation\n(${DateFormat('dd MMM yyyy, hh:mm a').format(pickup)})'),
@@ -473,11 +570,44 @@ class CarDetailsScreen extends StatelessWidget {
                 Text('₹${amount.toStringAsFixed(2)}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1E3A8A))),
               ],
             ),
-            const SizedBox(height: 4),
-            const Text('Stripe Test Mode Receipt Generated', style: TextStyle(color: Colors.grey, fontSize: 11)),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                const Icon(Icons.picture_as_pdf, size: 16, color: Colors.red),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    'Official PDF invoice ($invoiceNumber.pdf) generated & downloaded automatically.',
+                    style: const TextStyle(color: Colors.black87, fontSize: 11),
+                  ),
+                ),
+              ],
+            ),
           ],
         ),
         actions: [
+          OutlinedButton.icon(
+            onPressed: () {
+              ReceiptPdfService.downloadReceiptPdf(
+                bookingId: invoiceNumber,
+                invoiceNumber: invoiceNumber,
+                customerName: user.fullName,
+                customerEmail: user.email,
+                mobileNumber: user.mobileNumber,
+                carName: car.name,
+                category: car.category,
+                district: car.district,
+                pickupLocation: pickupLocation,
+                pickupDateTime: pickup,
+                dropLocation: dropLocation,
+                dropDateTime: drop,
+                totalPrice: amount,
+                paymentMethod: 'UPI / Card Online',
+              );
+            },
+            icon: const Icon(Icons.file_download_outlined, size: 18),
+            label: const Text('Download Invoice PDF'),
+          ),
           ElevatedButton(
             onPressed: () {
               Navigator.pop(ctx); // Close receipt dialog
@@ -490,10 +620,33 @@ class CarDetailsScreen extends StatelessWidget {
       ),
     );
 
-    // Save booking to Firestore in background and update user bookings history
+    // Trigger Automatic PDF Receipt Download on Device
+    try {
+      await ReceiptPdfService.downloadReceiptPdf(
+        bookingId: invoiceNumber,
+        invoiceNumber: invoiceNumber,
+        customerName: user.fullName,
+        customerEmail: user.email,
+        mobileNumber: user.mobileNumber,
+        carName: car.name,
+        category: car.category,
+        district: car.district,
+        pickupLocation: pickupLocation,
+        pickupDateTime: pickup,
+        dropLocation: dropLocation,
+        dropDateTime: drop,
+        totalPrice: amount,
+        paymentMethod: 'UPI / Card Online',
+      );
+    } catch (e) {
+      debugPrint('Receipt PDF download note: $e');
+    }
+
+    // Save booking to Firestore in background and update history
     try {
       final booking = BookingModel(
         bookingId: '',
+        invoiceNumber: invoiceNumber,
         userId: userId,
         carId: carId,
         pickupLocation: pickupLocation,

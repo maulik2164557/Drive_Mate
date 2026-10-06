@@ -76,16 +76,27 @@ class _AdminDashboardState extends State<AdminDashboard> {
           Row(
             children: [
               ElevatedButton.icon(
-                onPressed: () => _showCompletedJourneysModal(context),
+                onPressed: () => Navigator.pushNamed(context, '/admin_directory'),
+                icon: const Icon(Icons.people_alt, size: 18),
+                label: const Text('Admin Directory'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.indigo.shade800,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                ),
+              ),
+              const SizedBox(width: 10),
+              ElevatedButton.icon(
+                onPressed: () => Navigator.pushNamed(context, '/admin_completed_journeys'),
                 icon: const Icon(Icons.check_circle_outline, size: 18),
                 label: const Text('Completed Journeys'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.green.shade700,
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 10),
               ElevatedButton.icon(
                 onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const JourneyOperationsScreen())),
                 icon: const Icon(Icons.analytics, size: 18),
@@ -1228,143 +1239,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  void _showCompletedJourneysModal(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (ctx) => StreamBuilder<List<BookingModel>>(
-        stream: _dbService.getAllBookings(),
-        builder: (context, snapshot) {
-          final allBookings = snapshot.data ?? [];
-          final completedJourneys = allBookings.where((b) => b.effectiveStatus == 'Completed').toList();
-
-          return Container(
-            height: MediaQuery.of(context).size.height * 0.85,
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      children: [
-                        const Icon(Icons.check_circle, color: Colors.green, size: 28),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Completed Journeys Archives (${completedJourneys.length})',
-                          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF1E3A8A)),
-                        ),
-                      ],
-                    ),
-                    IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(ctx)),
-                  ],
-                ),
-                const Divider(height: 24),
-                if (completedJourneys.isEmpty)
-                  const Expanded(
-                    child: Center(
-                      child: Text('No completed journeys found.', style: TextStyle(color: Colors.grey, fontSize: 16)),
-                    ),
-                  )
-                else
-                  Expanded(
-                    child: ListView.builder(
-                      itemCount: completedJourneys.length,
-                      itemBuilder: (context, index) {
-                        final booking = completedJourneys[index];
-                        return FutureBuilder<Map<String, dynamic>>(
-                          future: _fetchJourneyDetails(booking),
-                          builder: (context, snap) {
-                            if (!snap.hasData) {
-                              return const Card(child: Padding(padding: EdgeInsets.all(16), child: Center(child: CircularProgressIndicator())));
-                            }
-                            final car = snap.data!['car'] as CarModel?;
-                            final user = snap.data!['user'] as UserModel?;
-                            final hours = booking.dropDateTime.difference(booking.pickupDateTime).inHours;
-
-                            return Card(
-                              elevation: 3,
-                              margin: const EdgeInsets.only(bottom: 16),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                              child: Padding(
-                                padding: const EdgeInsets.all(16),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      children: [
-                                        ClipRRect(
-                                          borderRadius: BorderRadius.circular(8),
-                                          child: Image.network(
-                                            car?.imageUrl ?? '',
-                                            width: 80,
-                                            height: 60,
-                                            fit: BoxFit.cover,
-                                            errorBuilder: (_, __, ___) => Container(width: 80, height: 60, color: Colors.grey[200], child: const Icon(Icons.directions_car)),
-                                          ),
-                                        ),
-                                        const SizedBox(width: 12),
-                                        Expanded(
-                                          child: Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
-                                            children: [
-                                              Text(car?.name ?? "Car ID: ${booking.carId}", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
-                                              Text('${car?.category ?? "N/A"} • ${car?.fuelType ?? "N/A"} • ${car?.transmission ?? "N/A"}', style: const TextStyle(fontSize: 12, color: Colors.grey)),
-                                              Text('Depot: ${car?.district ?? "Gujarat"} Office', style: const TextStyle(fontSize: 12, color: Color(0xFF1E3A8A), fontWeight: FontWeight.bold)),
-                                            ],
-                                          ),
-                                        ),
-                                        Chip(
-                                          avatar: const Icon(Icons.check_circle, size: 14, color: Colors.white),
-                                          label: const Text('COMPLETED', style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
-                                          backgroundColor: Colors.green.shade700,
-                                        ),
-                                      ],
-                                    ),
-                                    const Divider(height: 20),
-                                    // Customer Details
-                                    Container(
-                                      padding: const EdgeInsets.all(10),
-                                      decoration: BoxDecoration(color: Colors.grey[50], borderRadius: BorderRadius.circular(8)),
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Text('Customer: ${user?.fullName ?? "N/A"} | Mobile: ${user?.mobileNumber ?? "N/A"}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                                          Text('Email: ${user?.email ?? "N/A"} | KYC: ${user?.kycStatus ?? "Pending"}', style: const TextStyle(fontSize: 12, color: Colors.grey)),
-                                        ],
-                                      ),
-                                    ),
-                                    const SizedBox(height: 10),
-                                    // Journey Route & Times
-                                    Text('Pickup: ${booking.pickupLocation.isEmpty ? "Depot" : booking.pickupLocation} (${DateFormat("dd MMM yyyy, hh:mm a").format(booking.pickupDateTime)})', style: const TextStyle(fontSize: 12)),
-                                    Text('Drop: ${booking.dropLocation.isEmpty ? "Depot" : booking.dropLocation} (${DateFormat("dd MMM yyyy, hh:mm a").format(booking.dropDateTime)})', style: const TextStyle(fontSize: 12)),
-                                    const SizedBox(height: 6),
-                                    Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Text('Duration: $hours Hours (${(hours / 24).toStringAsFixed(1)} Days)', style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1E3A8A), fontSize: 12)),
-                                        Text('Fare: ₹${booking.totalPrice.toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green, fontSize: 16)),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            );
-                          },
-                        );
-                      },
-                    ),
-                  ),
-              ],
-            ),
-          );
-        },
       ),
     );
   }

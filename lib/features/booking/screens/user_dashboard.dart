@@ -489,9 +489,21 @@ class _UserDashboardState extends State<UserDashboard> {
           const SizedBox(height: 8),
           Row(
             children: [
-              Expanded(child: _buildTimePicker('Pickup Time', _pickupDateTime, (dt) => setState(() => _pickupDateTime = dt))),
+              Expanded(
+                child: _buildTimePickerWidget(
+                  label: 'Pickup Time',
+                  value: _pickupDateTime,
+                  onTap: _selectPickupDateTime,
+                ),
+              ),
               const SizedBox(width: 8),
-              Expanded(child: _buildTimePicker('Drop Time', _dropDateTime, (dt) => setState(() => _dropDateTime = dt))),
+              Expanded(
+                child: _buildTimePickerWidget(
+                  label: 'Drop Time',
+                  value: _dropDateTime,
+                  onTap: _selectDropDateTime,
+                ),
+              ),
               const SizedBox(width: 8),
               ElevatedButton.icon(
                 onPressed: _performDateSearch,
@@ -547,49 +559,186 @@ class _UserDashboardState extends State<UserDashboard> {
     );
   }
 
-  Widget _buildTimePicker(String label, DateTime? value, Function(DateTime) onPicked) {
-    return InkWell(
-      onTap: () async {
-        final date = await showDatePicker(
-          context: context,
-          initialDate: DateTime.now(),
-          firstDate: DateTime.now(),
-          lastDate: DateTime.now().add(const Duration(days: 365)),
+  Future<void> _selectPickupDateTime() async {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+
+    final initialDate = (_pickupDateTime != null && !_pickupDateTime!.isBefore(today))
+        ? _pickupDateTime!
+        : today;
+
+    final pickedDate = await showDatePicker(
+      context: context,
+      initialDate: initialDate,
+      firstDate: today,
+      lastDate: today.add(const Duration(days: 365)),
+      helpText: 'SELECT PICKUP DATE',
+    );
+
+    if (pickedDate != null && mounted) {
+      final initialTime = _pickupDateTime != null
+          ? TimeOfDay.fromDateTime(_pickupDateTime!)
+          : TimeOfDay.now();
+
+      final pickedTime = await showTimePicker(
+        context: context,
+        initialTime: initialTime,
+        helpText: 'SELECT PICKUP TIME',
+      );
+
+      if (pickedTime != null && mounted) {
+        final newPickup = DateTime(
+          pickedDate.year,
+          pickedDate.month,
+          pickedDate.day,
+          pickedTime.hour,
+          pickedTime.minute,
         );
-        if (date != null && mounted) {
-          final time = await showTimePicker(context: context, initialTime: TimeOfDay.now());
-          if (time != null) {
-            onPicked(DateTime(date.year, date.month, date.day, time.hour, time.minute));
+
+        setState(() {
+          _pickupDateTime = newPickup;
+
+          // If dropDateTime was already set and is no longer strictly after newPickup, reset it
+          if (_dropDateTime != null && !_dropDateTime!.isAfter(newPickup)) {
+            _dropDateTime = null;
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Drop time was reset. Please select a drop time after pickup date & time.'),
+                backgroundColor: Colors.orange,
+                duration: Duration(seconds: 3),
+              ),
+            );
           }
+        });
+      }
+    }
+  }
+
+  Future<void> _selectDropDateTime() async {
+    if (_pickupDateTime == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please select Pickup date & time first.'),
+          backgroundColor: Colors.orange,
+          duration: Duration(seconds: 3),
+        ),
+      );
+      return;
+    }
+
+    final pickupDateOnly = DateTime(_pickupDateTime!.year, _pickupDateTime!.month, _pickupDateTime!.day);
+
+    final initialDate = (_dropDateTime != null && !_dropDateTime!.isBefore(pickupDateOnly))
+        ? DateTime(_dropDateTime!.year, _dropDateTime!.month, _dropDateTime!.day)
+        : pickupDateOnly;
+
+    final pickedDate = await showDatePicker(
+      context: context,
+      initialDate: initialDate,
+      firstDate: pickupDateOnly, // Strictly prevents choosing a previous calendar date
+      lastDate: pickupDateOnly.add(const Duration(days: 365)),
+      helpText: 'SELECT DROP DATE',
+    );
+
+    if (pickedDate != null && mounted) {
+      final initialTime = _dropDateTime != null
+          ? TimeOfDay.fromDateTime(_dropDateTime!)
+          : TimeOfDay(
+              hour: (_pickupDateTime!.hour + 2) % 24,
+              minute: _pickupDateTime!.minute,
+            );
+
+      final pickedTime = await showTimePicker(
+        context: context,
+        initialTime: initialTime,
+        helpText: 'SELECT DROP TIME',
+      );
+
+      if (pickedTime != null && mounted) {
+        final newDrop = DateTime(
+          pickedDate.year,
+          pickedDate.month,
+          pickedDate.day,
+          pickedTime.hour,
+          pickedTime.minute,
+        );
+
+        // Strict verification: Drop must be strictly greater than pickup date + time
+        if (!newDrop.isAfter(_pickupDateTime!)) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Invalid drop time! Drop date & time must be after pickup time (${DateFormat('dd/MM/yyyy, hh:mm a').format(_pickupDateTime!)}).',
+              ),
+              backgroundColor: Colors.red,
+              duration: const Duration(seconds: 4),
+            ),
+          );
+          return;
         }
-      },
+
+        setState(() {
+          _dropDateTime = newDrop;
+        });
+      }
+    }
+  }
+
+  Widget _buildTimePickerWidget({
+    required String label,
+    required DateTime? value,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
       child: InputDecorator(
         decoration: InputDecoration(
           labelText: label,
+          prefixIcon: const Icon(Icons.schedule, size: 20),
           border: const OutlineInputBorder(),
           contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         ),
-        child: Text(value == null ? 'Select Date/Time' : DateFormat('dd/MM HH:mm').format(value)),
+        child: Text(
+          value == null ? 'Select Date/Time' : DateFormat('dd MMM, hh:mm a').format(value),
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: value != null ? FontWeight.w600 : FontWeight.normal,
+            color: value != null ? const Color(0xFF1E3A8A) : Colors.black87,
+          ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
       ),
     );
   }
 
   void _performDateSearch() {
-    if (_pickupDateTime != null && _dropDateTime != null) {
-      _fetchAvailability();
-      Provider.of<BookingProvider>(context, listen: false).searchCars(
-        pickup: _pickupDateTime!,
-        drop: _dropDateTime!,
-        category: _selectedCategory,
-      );
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Checking schedule availability for selected dates...'), duration: Duration(seconds: 1)),
-      );
-    } else {
+    if (_pickupDateTime == null || _dropDateTime == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please select both pickup and drop date/time.')),
       );
+      return;
     }
+
+    if (!_dropDateTime!.isAfter(_pickupDateTime!)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Drop date & time must be after pickup date & time.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    _fetchAvailability();
+    Provider.of<BookingProvider>(context, listen: false).searchCars(
+      pickup: _pickupDateTime!,
+      drop: _dropDateTime!,
+      category: _selectedCategory,
+    );
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Checking schedule availability for selected dates...'), duration: Duration(seconds: 1)),
+    );
   }
 
   Widget _buildCarGrid(List<CarModel> cars) {
@@ -620,9 +769,6 @@ class _UserDashboardState extends State<UserDashboard> {
       );
     }
 
-    final defaultPickup = _pickupDateTime ?? DateTime.now().add(const Duration(hours: 2));
-    final defaultDrop = _dropDateTime ?? DateTime.now().add(const Duration(days: 1, hours: 2));
-
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -645,21 +791,99 @@ class _UserDashboardState extends State<UserDashboard> {
           availableUnits: available,
           isFullyBooked: isFullyBooked,
           onTap: () {
-            if (isFullyBooked) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('All units of this car are fully booked for your selected schedule.')),
+            // 1. Mandatory Location & Date/Time Selection Check
+            if (_pickupLoc.text.trim().isEmpty ||
+                _dropLoc.text.trim().isEmpty ||
+                _pickupDateTime == null ||
+                _dropDateTime == null) {
+              showDialog(
+                context: context,
+                builder: (ctx) => AlertDialog(
+                  title: const Row(
+                    children: [
+                      Icon(Icons.edit_calendar, color: Color(0xFF1E3A8A)),
+                      SizedBox(width: 8),
+                      Text('Schedule & Location Required'),
+                    ],
+                  ),
+                  content: const Text(
+                    'Please specify your Pickup Location, Drop Location, Pickup Time, and Drop Time at the top before booking a car.',
+                  ),
+                  actions: [
+                    ElevatedButton(
+                      onPressed: () => Navigator.pop(ctx),
+                      style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1E3A8A), foregroundColor: Colors.white),
+                      child: const Text('OK, Enter Details'),
+                    ),
+                  ],
+                ),
               );
               return;
             }
+
+            // 1.5 Strict Validation: Drop Time must be greater than Pickup Time
+            if (!_dropDateTime!.isAfter(_pickupDateTime!)) {
+              showDialog(
+                context: context,
+                builder: (ctx) => AlertDialog(
+                  title: const Row(
+                    children: [
+                      Icon(Icons.error_outline, color: Colors.red),
+                      SizedBox(width: 8),
+                      Text('Invalid Schedule'),
+                    ],
+                  ),
+                  content: const Text(
+                    'Drop date & time must be greater than pickup date & time. Please update your drop schedule at the top.',
+                  ),
+                  actions: [
+                    ElevatedButton(
+                      onPressed: () => Navigator.pop(ctx),
+                      style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1E3A8A), foregroundColor: Colors.white),
+                      child: const Text('OK'),
+                    ),
+                  ],
+                ),
+              );
+              return;
+            }
+
+            // 2. Overlapping Inventory Availability Check
+            if (isFullyBooked) {
+              showDialog(
+                context: context,
+                builder: (ctx) => AlertDialog(
+                  title: const Row(
+                    children: [
+                      Icon(Icons.block, color: Colors.red),
+                      SizedBox(width: 8),
+                      Text('Car Not Available'),
+                    ],
+                  ),
+                  content: Text(
+                    'Sorry, ${car.name} is not available for your selected dates because all ${car.totalUnits} units are already booked.',
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(ctx),
+                      child: const Text('Close'),
+                    ),
+                  ],
+                ),
+              );
+              return;
+            }
+
+            // 3. Validated -> Proceed to Booking Confirmation
             Navigator.push(
               context,
               MaterialPageRoute(
                 builder: (context) => CarDetailsScreen(
                   car: car,
-                  pickup: defaultPickup,
-                  drop: defaultDrop,
-                  pickupLocation: _pickupLoc.text.trim().isNotEmpty ? _pickupLoc.text.trim() : '${car.district} Office / Depot',
-                  dropLocation: _dropLoc.text.trim().isNotEmpty ? _dropLoc.text.trim() : '${car.district} Office / Depot',
+                  pickup: _pickupDateTime!,
+                  drop: _dropDateTime!,
+                  pickupLocation: _pickupLoc.text.trim(),
+                  dropLocation: _dropLoc.text.trim(),
                 ),
               ),
             );

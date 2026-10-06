@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 class BookingModel {
   final String bookingId;
+  final String? invoiceNumber;
   final String userId;
   final String carId;
   final String pickupLocation;
@@ -18,6 +19,7 @@ class BookingModel {
 
   BookingModel({
     required this.bookingId,
+    this.invoiceNumber,
     required this.userId,
     required this.carId,
     required this.pickupLocation,
@@ -33,6 +35,14 @@ class BookingModel {
     required this.createdAt,
   });
 
+  String get effectiveInvoiceNumber {
+    if (invoiceNumber != null && invoiceNumber!.isNotEmpty) {
+      return invoiceNumber!;
+    }
+    final short = bookingId.length > 8 ? bookingId.substring(0, 8).toUpperCase() : bookingId.toUpperCase();
+    return 'INV-${short.isEmpty ? "DM" : short}';
+  }
+
   String get effectiveStatus {
     if (status == 'Cancelled') return 'Cancelled';
     final now = DateTime.now();
@@ -44,6 +54,7 @@ class BookingModel {
   factory BookingModel.fromMap(Map<String, dynamic> map, String id) {
     return BookingModel(
       bookingId: id,
+      invoiceNumber: map['invoiceNumber'],
       userId: map['userId'] ?? '',
       carId: map['carId'] ?? '',
       pickupLocation: map['pickupLocation'] ?? '',
@@ -64,6 +75,7 @@ class BookingModel {
 
   Map<String, dynamic> toMap() {
     return {
+      if (invoiceNumber != null) 'invoiceNumber': invoiceNumber,
       'userId': userId,
       'carId': carId,
       'pickupLocation': pickupLocation,

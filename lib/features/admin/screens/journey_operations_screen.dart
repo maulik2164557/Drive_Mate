@@ -68,7 +68,6 @@ class JourneyOperationsScreen extends StatelessWidget {
                     ],
                   ),
                 ),
-                const AppFooter(),
               ],
             ),
           );
@@ -79,28 +78,40 @@ class JourneyOperationsScreen extends StatelessWidget {
 
   Widget _buildJourneyList(List<BookingModel> bookings, DatabaseService dbService, {required bool isRunning}) {
     if (bookings.isEmpty) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(32.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(isRunning ? Icons.no_crash : Icons.event_available, size: 64, color: Colors.grey),
-              const SizedBox(height: 16),
-              Text(
-                isRunning ? 'No currently running journeys at this time.' : 'No pending or upcoming journeys scheduled.',
-                style: const TextStyle(fontSize: 16, color: Colors.grey),
+      return SingleChildScrollView(
+        child: Column(
+          children: [
+            Container(
+              height: 400,
+              alignment: Alignment.center,
+              padding: const EdgeInsets.all(32.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(isRunning ? Icons.no_crash : Icons.event_available, size: 64, color: Colors.grey),
+                  const SizedBox(height: 16),
+                  Text(
+                    isRunning ? 'No currently running journeys at this time.' : 'No pending or upcoming journeys scheduled.',
+                    style: const TextStyle(fontSize: 16, color: Colors.grey),
+                  ),
+                ],
               ),
-            ],
-          ),
+            ),
+            const AppFooter(),
+          ],
         ),
       );
     }
 
-    return ListView.builder(
-      padding: const EdgeInsets.all(24),
-      itemCount: bookings.length,
-      itemBuilder: (context, index) {
+    return SingleChildScrollView(
+      child: Column(
+        children: [
+          ListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            padding: const EdgeInsets.all(24),
+            itemCount: bookings.length,
+            itemBuilder: (context, index) {
         final booking = bookings[index];
         return FutureBuilder<Map<String, dynamic>>(
           future: _getJourneyDetails(booking, dbService),
@@ -224,8 +235,12 @@ class JourneyOperationsScreen extends StatelessWidget {
           },
         );
       },
-    );
-  }
+    ),
+    const AppFooter(),
+  ],
+),
+);
+}
 
   Future<Map<String, dynamic>> _getJourneyDetails(BookingModel booking, DatabaseService dbService) async {
     final user = await dbService.getUserById(booking.userId);
